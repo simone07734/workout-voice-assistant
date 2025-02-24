@@ -1,8 +1,8 @@
 import speech_recognition as sr
 
 r = sr.Recognizer()
-     
-with sr.Microphone() as source:     
+
+with sr.Microphone(device_index=1) as source:     
     print("Listening...")
     r.pause_threshold = 1
     audio = r.listen(source)
@@ -13,5 +13,5 @@ try:
     print(f"User said: {query}\n")
   
 except Exception as e:
-    print(e)    
+    print(e)   
     print("Unable to Recognize your voice.")  
