@@ -14,4 +14,9 @@ try:
   
 except Exception as e:
     print(e)   
+    query = r.recognize_vosk(audio)
+    print(f"User said: {query}\n")
+  
+except Exception as e:
+    print(e)    
     print("Unable to Recognize your voice.")  
