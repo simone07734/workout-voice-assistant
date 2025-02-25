@@ -1,26 +1,7 @@
-'''
-1. retrieve workouts from json file
-2. read out prompt and all workout options
-3. take in user input for which workout
-4. go to that specific workout chosen
-5. narrarate workout by: go through each exercise and say how many
-sets and reps we'll do in total. then say ready? say yes or no. take in
-user input. if they dont respond in 20 seconds, ask again. once the user inputs yes,
-go to the first exercise and count 1,2,3,4,... for each rep with 1.5 seconds
-in between. after each set, wait 20 seconds, then continue to next rep. after all
-reps are completed, read out loud the next exercise and say how many
-sets and reps we'll do in total. then say ready? say yes or no. take in
-user input. if they dont respond in 20 seconds, ask again. once the user inputs yes,
-go to the first exercise and count 1,2,3,4,... for each rep with 1.5 seconds
-in between. and repeat until the last exercise is completed
-
-
-where i stopped 2/24: reading the exercise and asking the user if they're
-ready to begin
-'''
-
 import os # for operating system
 import time # for breaks
+import threading # to repeatedly prompt while asking for input
+import queue # to repeatedly narrate
 import json # to access workout files
 import pyttsx3 # text-to-speech library which allows program to speak
 
@@ -48,7 +29,7 @@ def retrieve_workouts(workout_file_path):
             workout_data = json.load(file)
         return workout_data
     except Exception as e:
-        print("Could not load file.")
+        narrate("Could not load file.")
         return None
 
 # displays workout choices and promps user to select
@@ -59,13 +40,13 @@ def select_workout(workout_folder_path):
     # narrate all options
     narrate ("Here are your workout options:")
     for i, workout_file in enumerate (workout_files, start = 1):
-        print(f"{i}. {workout_file}") # debugging
         narrate(f"{i}. {workout_file}")
 
     # prompt user to select workout
     narrate ("Please choose a workout by saying the number.")
     # change later to take in voice input
-    user_choice = int(input(f"Choose a workout (1-{len(workout_files)}): ")) - 1
+    user_choice = int(input()) - 1 
+    #user_choice = int(input(f"Choose a workout (1-{len(workout_files)}): ")) - 1
     # get selected workout file
     selected_workout_file = os.path.join(workout_folder_path, workout_files[user_choice])
     selected_workout_file = selected_workout_file + '.json'
@@ -73,15 +54,37 @@ def select_workout(workout_folder_path):
     return retrieve_workouts(selected_workout_file)
 
 # function to wait for user response regarding when they want to start the exercise
-def wait_for_user_response():
-    while True:
-        user_input = input("Ready? Say 'yes' to begin: ").strip().lower()
-        if user_input == "yes":
-            return True
-        else:
-            print("Say 'yes' to begin.")
-            time.sleep(1)
+# uses threading to allow the prompt to repeat every 15 seconds while waiting for input (parallel execution)
 
+def wait_for_user_response():
+    q = queue.Queue()
+
+    def prompt_repeatedly():
+        # prompts to the queue every 10 seconds until the user responds with yes
+        while not event.is_set():  
+            q.put("Say 'yes' to begin.")  
+            time.sleep(10)  
+
+    event = threading.Event()  # event to stop prompting once user responds
+    prompt_thread = threading.Thread(target=prompt_repeatedly, daemon=True)  
+    prompt_thread.start()  
+
+    while not event.is_set():
+        # process all pending narration messages (must be in main thread because pyttsx3)
+        while not q.empty():
+            narrate(q.get())
+
+        # check for input without blocking
+        if input_available():
+            user_input = input().strip().lower()
+            if user_input == "yes":  
+                event.set()  # stop repeated prompts
+                return True  
+
+# returns True if input is available without blocking.
+def input_available():
+    import sys, select
+    return select.select([sys.stdin], [], [], 0.1)[0]
 
 # narrates the workout
 def do_workout(workout_data):
@@ -90,19 +93,27 @@ def do_workout(workout_data):
     for i, exercise in enumerate(workout_data['exercises']):
         if i == 0:
             narrate(f"First exercise is {exercise['name']}. We will do {exercise['sets']} sets of {exercise['reps']} reps.")
-            print((f"First exercise is {exercise['name']}. We will do {exercise['sets']} sets of {exercise['reps']} reps."))
         elif i == num_exercises - 1:
             narrate(f"Last exercise is {exercise['name']}. We will do {exercise['sets']} sets of {exercise['reps']} reps.")
-            print((f"Last exercise is {exercise['name']}. We will do {exercise['sets']} sets of {exercise['reps']} reps."))
         else:
             narrate(f"Next exercise is {exercise['name']}. We will do {exercise['sets']} sets of {exercise['reps']} reps.")
-            print((f"Next exercise is {exercise['name']}. We will do {exercise['sets']} sets of {exercise['reps']} reps."))
-        
         ready = False
         while not ready:
             ready = wait_for_user_response()
-            if not ready:
-                narrate("Say yes to begin")
+
+        # perform sets and reps
+        for set_num in range(1, exercise['sets'] + 1):
+            narrate(f"Starting {exercise['name']} set {set_num}.")
+
+            for rep_num in range(1, exercise['reps'] + 1):
+                narrate(str(rep_num))
+                time.sleep(2)
+
+            if set_num < exercise['sets']:
+                narrate("Rest for 20 seconds.")
+                time.sleep(20)
+
+        narrate(f"Finished {exercise['name']}")
     
     
 # test
