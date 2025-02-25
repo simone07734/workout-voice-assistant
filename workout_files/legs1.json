@@ -1,0 +1,25 @@
+{
+  "workout_title": "Leg Day Workout",
+  "exercises": [
+    {
+      "name": "Squats",
+      "sets": 4,
+      "reps": 12
+    },
+    {
+      "name": "Lunges",
+      "sets": 3,
+      "reps": 10
+    },
+    {
+      "name": "Leg Press",
+      "sets": 4,
+      "reps": 10
+    },
+    {
+      "name": "Calf Raises",
+      "sets": 4,
+      "reps": 15
+    }
+  ]
+}
