@@ -1,0 +1,10 @@
+{
+  "workout_title": "Core Day Workout",
+  "exercises": [
+    {
+      "name": "Sit Ups",
+      "sets": 2,
+      "reps": 2
+    }
+  ]
+}
