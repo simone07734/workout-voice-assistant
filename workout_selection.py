@@ -2,6 +2,7 @@ import os # for operating system
 import time # for breaks
 import threading # to repeatedly prompt while asking for input
 import queue # to repeatedly narrate
+from datetime import datetime # to get current date and time
 import json # to access workout files
 import pyttsx3 # text-to-speech library which allows program to speak
 
@@ -86,6 +87,33 @@ def input_available():
     import sys, select
     return select.select([sys.stdin], [], [], 0.1)[0]
 
+# logs workout details (name, difficulty, and date) to json
+def log_workout(workout_name, difficulty):
+    log_entry = {
+        "workout_name": workout_name,
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "difficulty": difficulty
+    }    
+    try:
+        # attempt to open the existing workout log and load data
+        with open("workout_log.json", "r") as file:
+            log_data = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        # if file doesn't exist or is empty, initialize an empty list
+        log_data = []
+
+    # add the new log entry to the existing data
+    log_data.append(log_entry)
+    
+    # write the updated data to the file
+    try:
+        with open("workout_log.json", "w") as file:
+            json.dump(log_data, file, indent=4)
+    except Exception as e:
+        narrate(f"Error writing to file: {e}")  # Debugging: Catch and display any errors
+
+        file.close()
+
 # narrates the workout
 def do_workout(workout_data):
     # output exercise name, sets, and reps before walking through the exercise
@@ -111,10 +139,18 @@ def do_workout(workout_data):
 
             if set_num < exercise['sets']:
                 narrate("Rest for 20 seconds.")
-                time.sleep(20)
+                time.sleep(5)
+                # CHANGE
 
         narrate(f"Finished {exercise['name']}")
-    
+
+    narrate("Please rate the difficulty of this workout from 1 to 10, with 1 being the easiest and 10 being the hardest.")
+    user_rating = int(input())
+
+
+    log_workout(workout_data['workout_title'], user_rating)  # Log workout name and user rating as difficulty
+    narrate(f"Thank you for your feedback! Workout '{workout_data['workout_title']}' has been logged with a difficulty rating of {user_rating}.")
+
     
 # test
 workout_folder_path = './workout_files'
