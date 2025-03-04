@@ -56,9 +56,12 @@ def select_workout(workout_folder_path):
 
 def wait_for_user_response():
     q = queue.Queue()
-    event = threading.Event()  # event to stop once user responds
-    
-    q.put("Are you ready? Say 'yes' to begin.") # ask user if they're ready
+
+    def prompt_repeatedly():
+        # prompts to the queue every 10 seconds until the user responds with yes
+        while not event.is_set():  
+            q.put("Say 'yes' to begin.")  
+            time.sleep(10)  
 
     event = threading.Event()  # event to stop prompting once user responds
     prompt_thread = threading.Thread(target=prompt_repeatedly, daemon=True)  
@@ -69,19 +72,13 @@ def wait_for_user_response():
         while not q.empty():
             audio.narrate(q.get())
 
-    # wait for input for 5 seconds
-    start_time = time.time()
-    while time.time() - start_time < 5:
+        # check for input without blocking
         if input_available():
             user_input = input().strip().lower()
-            if user_input == "yes":
-                return True
-    
-    # exit if no response
-    print("No response received. Exiting program.")
-    return False
-
-
+            if user_input == "yes":  
+                event.set()  # stop repeated prompts
+                return True  
+            
 # returns True if input is available without blocking.
 def input_available():
     import sys, select
@@ -132,28 +129,27 @@ def do_workout(workout_data):
         ready = False
         while not ready:
             ready = wait_for_user_response()
-        
-        while ready:
-            # perform sets and reps
-            for set_num in range(1, exercise['sets'] + 1):
-                audio.narrate(f"Starting {exercise['name']} set {set_num}.")
 
-                for rep_num in range(1, exercise['reps'] + 1):
-                    audio.narrate(str(rep_num))
-                    time.sleep(2)
+        # perform sets and reps
+        for set_num in range(1, exercise['sets'] + 1):
+            audio.narrate(f"Starting {exercise['name']} set {set_num}.")
 
-                if set_num < exercise['sets']:
-                    audio.narrate("Rest for 5 seconds.")
-                    time.sleep(5)
+            for rep_num in range(1, exercise['reps'] + 1):
+                audio.narrate(str(rep_num))
+                time.sleep(2)
 
-            audio.narrate(f"Finished {exercise['name']}")
+            if set_num < exercise['sets']:
+                audio.narrate("Rest for 5 seconds.")
+                time.sleep(5)
 
-        audio.narrate("Please rate the difficulty of this workout from 1 to 5")
-        audio.narrate("with 1 being the easiest and 5 being the hardest")
-        user_rating = int(input())
+        audio.narrate(f"Finished {exercise['name']}")
+
+    audio.narrate("Please rate the difficulty of this workout from 1 to 5")
+    audio.narrate("with 1 being the easiest and 5 being the hardest")
+    user_rating = int(input())
 
 
-        log_workout(workout_data['workout_title'], user_rating)  # Log workout name and user rating as difficulty
-        audio.narrate(f"Thank you for your feedback!")
-        audio.narrate(f"Workout {workout_data['workout_title']} has been logged with a difficulty rating of {user_rating}.")
+    log_workout(workout_data['workout_title'], user_rating)  # Log workout name and user rating as difficulty
+    audio.narrate(f"Thank you for your feedback!")
+    audio.narrate(f"Workout {workout_data['workout_title']} has been logged with a difficulty rating of {user_rating}.")
 
