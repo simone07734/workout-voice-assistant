@@ -6,9 +6,22 @@ from datetime import datetime # to get current date and time
 import json # to access workout files
 import audio
 
+number_words = {
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5
+}
+
 workout_folder_path = './workout_files'
 workout_logs_path = './workout_logs/workout_log.json'
 
+def convert_to_int(user_input):
+    if user_input in number_words:
+        return number_words[user_input]
+    else:
+        return None  # return None if the input is not a valid number word
 
 # retrieves all workout files fromm workout_files folder
 def get_workout_files (workout_folder_path):
@@ -43,7 +56,11 @@ def select_workout(workout_folder_path):
     # prompt user to select workout
     audio.narrate ("Please choose a workout by saying the number.")
     # change later to take in voice input
-    user_choice = int(input()) - 1 
+    user_choice = audio.get_user_speech()
+
+    user_choice = convert_to_int(user_choice)
+
+    print(user_choice)
     #user_choice = int(input(f"Choose a workout (1-{len(workout_files)}): ")) - 1
     # get selected workout file
     selected_workout_file = os.path.join(workout_folder_path, workout_files[user_choice])
