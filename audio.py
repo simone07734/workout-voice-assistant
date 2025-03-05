@@ -50,6 +50,7 @@ def get_user_speech ():
 
     try:
         query = r.recognize_vosk(audio)
+        query = query[14:16]
         return(query)
     except sr.UnknownValueError:
         return("could not understand")

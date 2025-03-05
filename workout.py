@@ -6,22 +6,23 @@ from datetime import datetime # to get current date and time
 import json # to access workout files
 import audio
 
-number_words = {
-    "one": 1,
-    "two": 2,
-    "three": 3,
-    "four": 4,
-    "five": 5
-}
-
 workout_folder_path = './workout_files'
 workout_logs_path = './workout_logs/workout_log.json'
 
-def convert_to_int(user_input):
-    if user_input in number_words:
-        return number_words[user_input]
-    else:
-        return None  # return None if the input is not a valid number word
+number_words = {
+    "on": 1,
+    "to": 2,
+    "tw" : 2,
+    "th": 3,
+    "fo": 4,
+    "fi": 5
+}
+
+def convert_to_int(word):
+    try:
+        return number_words[word]
+    except:
+        return 1  # return None if the input is not a valid number word
 
 # retrieves all workout files fromm workout_files folder
 def get_workout_files (workout_folder_path):
@@ -51,17 +52,15 @@ def select_workout(workout_folder_path):
     audio.narrate ("Here are your workout options")
     # TODO: .sync should not be an option listed. make sure to only select valid workouts because reading from .sync would be bad
     for i, workout_file in enumerate (workout_files, start = 1):
-        audio.narrate(f"number {i} is {workout_file}")
+        audio.narrate(f"Option {i} is {workout_file}")
 
     # prompt user to select workout
     audio.narrate ("Please choose a workout by saying the number.")
     # change later to take in voice input
     user_choice = audio.get_user_speech()
-
-    user_choice = convert_to_int(user_choice)
-
+    user_choice = (convert_to_int(user_choice)) - 1
     print(user_choice)
-    #user_choice = int(input(f"Choose a workout (1-{len(workout_files)}): ")) - 1
+    # user_choice = int(input(f"Choose a workout (1-{len(workout_files)}): ")) - 1
     # get selected workout file
     selected_workout_file = os.path.join(workout_folder_path, workout_files[user_choice])
     selected_workout_file = selected_workout_file + '.json'
@@ -91,8 +90,8 @@ def wait_for_user_response():
 
         # check for input without blocking
         if input_available():
-            user_input = input().strip().lower()
-            if user_input == "yes":  
+            user_input = audio.get_user_speech()
+            if user_input == "ye":  
                 event.set()  # stop repeated prompts
                 return True  
             
@@ -143,9 +142,9 @@ def do_workout(workout_data):
         else:
             audio.narrate(f"Next exercise is {exercise['name']}.")
             audio.narrate(f"We will do {exercise['sets']} sets of {exercise['reps']} reps.")
-        ready = False
-        while not ready:
-            ready = wait_for_user_response()
+        # ready = False
+        # while not ready:
+            # ready = wait_for_user_response()
 
         # perform sets and reps
         for set_num in range(1, exercise['sets'] + 1):
@@ -163,7 +162,8 @@ def do_workout(workout_data):
 
     audio.narrate("Please rate the difficulty of this workout from 1 to 5")
     audio.narrate("with 1 being the easiest and 5 being the hardest")
-    user_rating = int(input())
+    user_rating = audio.get_user_speech()
+    user_rating = convert_to_int(user_rating)
 
 
     log_workout(workout_data['workout_title'], user_rating)  # Log workout name and user rating as difficulty
