@@ -26,8 +26,8 @@ def convert_to_int(user_input):
 # retrieves all workout files fromm workout_files folder
 def get_workout_files (workout_folder_path):
     all_files = os.listdir(workout_folder_path)
-    # removes .json from output
-    workout_names = [os.path.splitext(f)[0] for f in all_files]
+    json_files = [f for f in all_files if f.lower().endswith('.json')] # only want .json files
+    workout_names = [os.path.splitext(f)[0] for f in json_files] # removes .json from output
     return workout_names
 
 # retrieves workout data from json file that was chosen by the user
@@ -56,11 +56,11 @@ def select_workout(workout_folder_path):
     # prompt user to select workout
     audio.narrate ("Please choose a workout by saying the number.")
     # change later to take in voice input
-    user_choice = audio.get_user_speech()
+    user_choice = audio.get_user_speech().strip().lower()
 
     user_choice = convert_to_int(user_choice)
 
-    print(user_choice)
+    print(user_choice) # FOR DEBUGGING
     #user_choice = int(input(f"Choose a workout (1-{len(workout_files)}): ")) - 1
     # get selected workout file
     selected_workout_file = os.path.join(workout_folder_path, workout_files[user_choice])
@@ -91,7 +91,7 @@ def wait_for_user_response():
 
         # check for input without blocking
         if input_available():
-            user_input = input().strip().lower()
+            user_input = audio.get_user_speech().strip().lower()
             if user_input == "yes":  
                 event.set()  # stop repeated prompts
                 return True  
@@ -163,8 +163,8 @@ def do_workout(workout_data):
 
     audio.narrate("Please rate the difficulty of this workout from 1 to 5")
     audio.narrate("with 1 being the easiest and 5 being the hardest")
-    user_rating = int(input())
-
+    user_rating = audio.get_user_speech().strip().lower()
+    user_rating = convert_to_int(user_rating)
 
     log_workout(workout_data['workout_title'], user_rating)  # Log workout name and user rating as difficulty
     audio.narrate(f"Thank you for your feedback!")
